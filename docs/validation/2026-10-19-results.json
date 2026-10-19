@@ -1,0 +1,233 @@
+{
+  "measured_on": "2026-10-19",
+  "prediction": {
+    "gpu": "RTX 4070 / 12282 MiB",
+    "settings": {
+      "num_models": 1,
+      "num_recycle": 3,
+      "msa_mode": "mmseqs2_uniref_env",
+      "timeout": 1800
+    },
+    "limitations": "Single run per public sample. Includes MSA and initialization; not steady-state throughput. Device peak includes pre-existing desktop GPU allocations.",
+    "results": [
+      {
+        "id": "1UBQ_1",
+        "name": "UBIQUITIN",
+        "organism": "Homo sapiens",
+        "source_url": "https://www.rcsb.org/structure/1UBQ",
+        "length": 76,
+        "job_id": "ef65554a-ea11-41cb-af1c-85b192b72249",
+        "status": "succeeded",
+        "error": null,
+        "wall_seconds": 35.47,
+        "plddt": {
+          "count": 76,
+          "max": 98.38,
+          "mean": 95.21447368421053,
+          "min": 47.03
+        },
+        "device_baseline_mib": 934,
+        "device_peak_used_mib": 5223,
+        "prediction_seconds": 34.0,
+        "cache_reused_same_job": true
+      },
+      {
+        "id": "45AR_2",
+        "name": "Beta-2-microglobulin",
+        "organism": "Homo sapiens",
+        "source_url": "https://www.rcsb.org/structure/45AR",
+        "length": 100,
+        "job_id": "3eb66639-32c7-419b-8e74-ef7a46ce17b2",
+        "status": "succeeded",
+        "error": null,
+        "wall_seconds": 49.55,
+        "plddt": {
+          "count": 100,
+          "max": 98.69,
+          "mean": 96.0186,
+          "min": 62.78
+        },
+        "device_baseline_mib": 944,
+        "device_peak_used_mib": 5616,
+        "prediction_seconds": 48.0,
+        "cache_reused_same_job": true
+      },
+      {
+        "id": "9ZWZ_1",
+        "name": "NEDD4-binding protein 2",
+        "organism": "Homo sapiens",
+        "source_url": "https://www.rcsb.org/structure/9ZWZ",
+        "length": 199,
+        "job_id": "0de7b90d-b301-4185-9c8a-0a331d30d287",
+        "status": "succeeded",
+        "error": null,
+        "wall_seconds": 62.07,
+        "plddt": {
+          "count": 199,
+          "max": 98.81,
+          "mean": 85.1778391959799,
+          "min": 28.44
+        },
+        "device_baseline_mib": 1134,
+        "device_peak_used_mib": 5376,
+        "prediction_seconds": 59.0,
+        "cache_reused_same_job": true
+      },
+      {
+        "id": "13GK_1",
+        "name": "Cyclin-dependent kinase 2",
+        "organism": "Homo sapiens",
+        "source_url": "https://www.rcsb.org/structure/13GK",
+        "length": 298,
+        "job_id": "cef476b9-5c28-4c84-a29d-9a246b8b9fb0",
+        "status": "succeeded",
+        "error": null,
+        "wall_seconds": 101.4,
+        "plddt": {
+          "count": 298,
+          "max": 98.5,
+          "mean": 85.35855704697985,
+          "min": 25.31
+        },
+        "device_baseline_mib": 1095,
+        "device_peak_used_mib": 5554,
+        "prediction_seconds": 100.0,
+        "cache_reused_same_job": true
+      }
+    ]
+  },
+  "search": {
+    "evaluation": "exact self retrieval sanity check plus optional same-UniProt retrieval",
+    "interpretation": "Same-accession retrieval measures matching UniProt labels only; it is not held-out family generalization. Exact self retrieval is a sanity check, not a quality metric.",
+    "model": "facebook/esm2_t6_8M_UR50D",
+    "revision": "c731040fcd8d73dceaa04b0a8e6329b345b0f5df",
+    "records": 1000,
+    "self_retrieval": {
+      "top_k": 10,
+      "hits": 1000,
+      "recall_at_k": 1.0,
+      "median_rank": 1.0
+    },
+    "same_uniprot_accession": {
+      "available": true,
+      "repeated_accession_groups": 107,
+      "queries": 256,
+      "top_k": 10,
+      "esm2_recall_at_k": {
+        "queries": 256,
+        "recall_at_k": 0.9075644841269839,
+        "hit_rate_at_k": 0.9609375,
+        "hits": 246,
+        "k": 10
+      },
+      "three_mer_jaccard_recall_at_k": {
+        "queries": 256,
+        "recall_at_k": 0.942373511904762,
+        "hit_rate_at_k": 0.9921875,
+        "hits": 254,
+        "k": 10
+      },
+      "reason_unavailable": null
+    }
+  },
+  "search_latency": {
+    "environment": "Docker app CPU, loopback HTTP, 76-residue 1UBQ, top10/1000",
+    "warmup_ms": 11.99,
+    "warm_samples_ms": [
+      11.35,
+      11.55,
+      11.38,
+      13.05,
+      11.46
+    ],
+    "warm_median_ms": 11.46,
+    "includes": "API JSON, CPU ESM query encoding, cosine search; excludes browser/rendering. Model already loaded before warmup."
+  },
+  "browser": {
+    "source": "http://127.0.0.1:8092",
+    "checks": [
+      "public MSA choice gates prediction",
+      "real completed prediction and WebGL canvas loaded",
+      "1000-record search returned 10 results and real experimental structure",
+      "prediction and reference displayed side by side in comparison mode",
+      "PDB download contains actual atom records",
+      "completed job restored after reload",
+      "invalid sequence rejected; mobile has no horizontal overflow"
+    ],
+    "screenshots": [
+      "workspace.png",
+      "comparison.png",
+      "mobile.png"
+    ],
+    "page_errors": []
+  },
+  "automated_tests": {
+    "passed": 30,
+    "command": "python -m unittest discover -s tests -v",
+    "gpu_required": false
+  },
+  "docker": {
+    "validated_at": "2026-10-19",
+    "compose_project": "protein-explorer-mvp",
+    "local_endpoint": "http://127.0.0.1:8092",
+    "containers": {
+      "app": {
+        "image": "protein-explorer:local",
+        "image_id": "sha256:06f3d29204218265b8f8a62d9f6306a74490f724253fe0817e7466b2ef7d313e",
+        "torch": "2.7.1+cpu"
+      },
+      "worker": {
+        "image": "protein-explorer-worker:local",
+        "image_id": "sha256:fc1d176f2d8e24c920147eb936cfc7accee38d0241b5fa24c90a43369dc6ca8a",
+        "base_image": "ghcr.io/sokrypton/colabfold:1.6.2-cuda12@sha256:22f1243a8feca427b6942889d4dc3b549a3b75b23df9cf85c5f512a85e4f7f77",
+        "colabfold": "1.6.3",
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.5.1",
+        "engine_fingerprint": "c11980cd5b3a5ab7fa2dd2220f570b8cdc0d32949fe0acf504158ff4ffc35b90"
+      }
+    },
+    "health": {
+      "status": "ok",
+      "worker_available": true,
+      "corpus": {
+        "ready": true,
+        "count": 1000,
+        "model": "facebook/esm2_t6_8M_UR50D"
+      },
+      "sample": "1UBQ"
+    },
+    "prediction_smoke_test": {
+      "id": "e129603d-1f91-46fe-8304-b3752cd791ce",
+      "status": "succeeded",
+      "sequence_length": 76,
+      "elapsed_seconds": 33,
+      "msa_mode": "mmseqs2_uniref_env",
+      "gpu_used": true,
+      "returncode": 0,
+      "plddt": {
+        "count": 76,
+        "mean": 95.19986842105263,
+        "min": 46.72,
+        "max": 98.38
+      },
+      "pdb_ca_atoms": 76,
+      "scores_count": 76,
+      "repeat_request": {
+        "same_id": true,
+        "cache_hit": true
+      }
+    },
+    "search_smoke_test": {
+      "query": "1UBQ",
+      "corpus_count": 1000,
+      "top_hit": "1UBQ_1",
+      "experimental_chain": "A",
+      "cosine_similarity": 0.9999999403953552
+    },
+    "ui_assets": {
+      "bundled_3dmol_bytes": 537792,
+      "mobile_metadata_overflow_fix_served": true
+    }
+  }
+}

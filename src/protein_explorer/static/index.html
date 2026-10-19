@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5ef">
+  <title>Protein Explorer — Sequence to structure</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/vendor/3Dmol-min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail" aria-label="Main navigation">
+      <a class="brand" href="#main" aria-label="Protein Explorer home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="brand-name">Protein<br>Explorer</span>
+      </a>
+      <nav class="rail-nav">
+        <a class="nav-item active" href="#workspace" aria-current="page"><span class="nav-icon">⌁</span><span>Workspace</span></a>
+        <a class="nav-item" href="#similarity"><span class="nav-icon">◌</span><span>Sequence search</span></a>
+      </nav>
+      <div class="rail-bottom">
+        <div class="rail-rule"></div>
+        <div class="rail-status"><span class="status-dot" id="engine-dot"></span><span id="engine-label">Checking engine</span></div>
+        <div class="rail-version">LOCAL RESEARCH TOOL<br><span>Protein Explorer · MVP</span></div>
+      </div>
+    </aside>
+
+    <main id="main" class="main-content">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>WORKSPACE</span><b>/</b><span>STRUCTURE LAB</span></div>
+        <div class="topbar-right"><button class="compare-button" id="compare-button" type="button" data-testid="compare-button" aria-pressed="false" aria-label="Enable comparison layout" title="Compare prediction and reference structures"><span class="compare-label">Compare</span><span aria-hidden="true">⇄</span></button><span class="local-pill"><span></span> Local environment</span><button class="icon-button" id="refresh-button" type="button" aria-label="Refresh jobs" title="Refresh jobs">↻</button></div>
+      </header>
+
+      <section class="intro" id="workspace">
+        <div class="intro-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span> PROTEIN STRUCTURE WORKSPACE</div>
+          <h1>Sequence to<br><em>structure.</em></h1>
+          <p class="intro-sub">Explore a sequence, find its closest references, and inspect a predicted structure.<br><span>서열을 입력해 유사 단백질을 찾고 3D 구조를 살펴보세요.</span></p>
+        </div>
+        <div class="intro-meta"><div class="meta-kicker">SEARCH CORPUS</div><div class="meta-value"><span id="corpus-count">—</span> <small>proteins</small></div><div class="meta-note" id="corpus-model">Preparing local index</div></div>
+      </section>
+
+      <div class="workspace-grid">
+        <section class="card sequence-card" aria-labelledby="sequence-title">
+          <div class="card-heading">
+            <div><div class="step-label"><span>01</span> INPUT</div><h2 id="sequence-title">Your sequence</h2></div>
+            <button class="text-button" type="button" id="sample-button" data-testid="sample-button">Load 1UBQ sample <span aria-hidden="true">↗</span></button>
+          </div>
+          <label class="sr-only" for="sequence-input">Protein amino acid sequence or FASTA</label>
+          <textarea id="sequence-input" data-testid="sequence-input" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder=">your_protein&#10;MKWVTFISLL FLFSSAYS&#10;Paste a FASTA record or amino acid sequence" aria-describedby="sequence-hint sequence-feedback"></textarea>
+          <div class="sequence-footer"><span id="sequence-hint">Standard amino acids · 30–300 residues</span><span id="residue-count">0 residues</span></div>
+          <div class="sequence-feedback" id="sequence-feedback" role="status" aria-live="polite"></div>
+          <div class="consent-box">
+            <input id="msa-consent" type="checkbox" aria-describedby="msa-copy">
+            <label for="msa-consent" id="msa-copy"><strong>Use the public MSA service</strong><span>Your sequence is sent to ColabFold’s public server to build a multiple sequence alignment.</span></label>
+            <span class="consent-tag">BEFORE PREDICTION</span>
+          </div>
+          <button class="primary-button" type="button" id="predict-button" data-testid="predict-button" disabled><span class="button-icon">↗</span><span>Predict structure</span><span class="button-arrow">→</span></button>
+          <div class="predict-footnote"><span class="tiny-lock" aria-hidden="true">⌑</span> Runs on your configured local prediction worker</div>
+        </section>
+
+        <section class="card prediction-card" aria-labelledby="prediction-title">
+          <div class="viewer-heading">
+            <div><div class="step-label"><span>02</span> PREDICTION</div><h2 id="prediction-title">Predicted structure</h2></div>
+            <div class="viewer-actions"><button class="round-action" type="button" id="download-pdb" aria-label="Download predicted PDB" title="Download PDB" disabled>↓</button><button class="round-action" type="button" id="download-report" aria-label="Download prediction report" title="Download report" disabled>↗</button></div>
+          </div>
+          <div class="structure-stage" id="prediction-viewer" data-testid="prediction-viewer" aria-label="Interactive predicted protein structure viewer">
+            <div class="viewer-placeholder" id="prediction-placeholder"><div class="placeholder-orbit"><span></span><span></span><span></span><b>PE</b></div><div class="placeholder-title">Your structure will appear here</div><div class="placeholder-caption">Submit a sequence to begin prediction</div><button class="log-button" id="view-log" type="button" hidden>View run log ↗</button></div>
+          </div>
+          <div class="viewer-bottom"><div class="job-status-line"><span class="status-dot muted" id="job-status-dot"></span><span id="job-status" data-testid="job-status" aria-live="polite">Waiting for sequence</span><button class="job-switch" id="job-switch" type="button" hidden>Recent runs <span>⌄</span></button></div><div id="plddt-summary" class="plddt-summary" hidden></div></div>
+          <div class="confidence-legend" id="prediction-legend" hidden><span>pLDDT confidence</span><div class="legend-scale"><i class="low"></i><i class="midlow"></i><i class="mid"></i><i class="high"></i></div><span class="legend-labels">Low <b>→</b> High</span></div>
+          <div class="viewer-hint">Drag to rotate <span>·</span> Scroll to zoom</div>
+        </section>
+      </div>
+
+      <section class="lower-grid" id="similarity">
+        <section class="card search-card" aria-labelledby="search-title">
+          <div class="card-heading search-heading">
+            <div><div class="step-label"><span>03</span> SIMILARITY SEARCH</div><h2 id="search-title">Find a reference</h2></div>
+            <button class="secondary-button" type="button" id="search-button" data-testid="search-button"><span>Search sequence</span><span>→</span></button>
+          </div>
+          <div class="search-explainer"><span class="search-spark">✳</span><span>Search the local protein corpus by sequence embedding. Similarity helps find candidates; it does not measure structure or function.</span></div>
+          <div id="search-state" class="search-state" aria-live="polite">Enter a sequence above, then search the local corpus.</div>
+          <div class="results-list" id="search-results"></div>
+        </section>
+
+        <section class="card reference-card" aria-labelledby="reference-title">
+          <div class="card-heading">
+            <div><div class="step-label"><span>04</span> REFERENCE</div><h2 id="reference-title">Experimental structure</h2></div>
+            <span class="experimental-badge">EXPERIMENTAL</span>
+          </div>
+          <div class="structure-stage reference-stage" id="reference-viewer" data-testid="reference-viewer" aria-label="Interactive experimental reference structure viewer">
+            <div class="viewer-placeholder compact-placeholder" id="reference-placeholder"><div class="reference-icon">◇</div><div class="placeholder-title">Choose a reference protein</div><div class="placeholder-caption">Select a search result to load its structure</div></div>
+          </div>
+          <div class="reference-info" id="reference-info"><span class="reference-dot"></span><span>No reference selected</span></div>
+          <div class="reference-note">Experimental structure shown in uniform teal. Experimental B-factors are not pLDDT.</div>
+          <div class="viewer-hint">Drag to rotate <span>·</span> Scroll to zoom</div>
+        </section>
+      </section>
+      <footer class="page-footer"><span>Protein Explorer <span class="footer-divider">/</span> Local scientific workspace</span><span>Sequence similarity ≠ structural similarity <i>·</i> pLDDT ≠ functional evidence</span></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

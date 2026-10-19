@@ -1,53 +1,72 @@
 ---
 type: Decision
-title: Protein Explorer 구조와 초기 범위
-description: M0 구현 범위와 로컬 예측·검색·시각화의 설계 결정을 기록합니다.
-tags: [architecture, decisions, scope, protein-structure]
+title: Protein Explorer 구현 구조와 결정
+description: MVP API, CPU 검색, 영속 예측 작업, GPU worker, 결과 캐시와 UI 구성을 설명합니다.
+tags: [architecture, decisions, search, gpu, web]
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-19T12:43:10Z
+  at: 2026-10-19T13:14:48Z
 sources:
   - id: prd
     resource: ../PRD.md
     title: Protein Explorer 제품 요구사항
-  - id: okf-v02
-    resource: file:///home/pilsu/projects/Knowledge-Forge/wiki/open-knowledge-format.md
-    title: Open Knowledge Format v0.2 로컬 참고 문서
-  - id: colabfold
-    resource: https://github.com/sokrypton/ColabFold
-    title: ColabFold 공식 저장소
+  - id: readme
+    resource: ../README.md
+    title: Protein Explorer 빠른 시작
+  - id: tutorial
+    resource: 2026-10-19-mvp-tutorial.md
+    title: MVP 처음부터 실행하기
   - id: esm
     resource: https://github.com/facebookresearch/esm
     title: Meta FAIR ESM 공식 저장소
-  - id: dgx-spark
-    resource: https://docs.nvidia.com/dgx/dgx-spark/hardware.html
-    title: NVIDIA DGX Spark 하드웨어 안내서
+  - id: colabfold
+    resource: https://github.com/sokrypton/ColabFold
+    title: ColabFold 공식 저장소
+  - id: rcsb
+    resource: https://www.rcsb.org/
+    title: RCSB Protein Data Bank
 ---
 
-# 목적과 범위
+# 구성
 
-Protein Explorer는 학습과 연구를 위한 로컬 도구입니다. 목표 흐름은 FASTA 또는 아미노산 서열 하나를 검증하고, ESM-2 임베딩으로 소규모 공개 단백질 코퍼스를 검색하며, 별도 설치된 ColabFold CLI로 구조를 예측한 뒤 출처 정보와 함께 비교하는 것입니다. 기준 문서는 [PRD](../PRD.md)입니다.
+Protein Explorer는 로컬 단일 사용자 앱이다. FastAPI가 API와 정적 화면을 제공하고, 바닐라 JavaScript와 로컬 배포한 3Dmol.js가 검색 결과와 구조를 표시한다. 구조 예측은 API 프로세스 안에서 장시간 실행하지 않고 별도의 GPU worker가 처리한다. 배포 구성은 [Docker Compose](../compose.yaml)에 있다.
 
-## M0 범위
+```mermaid
+flowchart LR
+    U[브라우저] --> A[FastAPI와 정적 UI]
+    A --> S[CPU ESM-2 검색]
+    S --> C[RCSB 코퍼스 및 임베딩]
+    S -->|필요 시 구조 요청| R[RCSB PDB]
+    A --> Q[(SQLite 작업 큐와 예측 결과)]
+    Q --> W[GPU worker]
+    W --> F[ColabFold]
+    F --> Q
+    Q --> A
+```
 
-M0에서는 서열 검증, 실행 환경 진단, 설치된 `colabfold_batch` 호출을 위한 Python 패키지와 표준 라이브러리 CLI를 만듭니다. 모델 가중치를 설치하거나 설정 과정에서 모델을 실행하지 않으며, GPU 예측이 성공했다고 표시하지 않습니다. 명령이 존재하거나 subprocess를 모의 실행했다는 사실만으로 실제 추론을 확인할 수 없습니다. 실제 예측 검증은 M1 범위입니다.
+앱과 검색은 CPU로 실행 가능하다. 검색 인덱스가 준비되면 질의 때만 모델을 lazy-load한다. 예측 제출에는 사용 가능한 worker heartbeat와 엔진 fingerprint가 필요하다. 앱 기본 포트는 호스트 loopback의 8080이다.
 
-## 결정과 제약
+## 검색 데이터와 점수
 
-- 앱 환경과 GPU 추론 환경을 분리합니다. 설치된 ColabFold 실행 파일은 인자 배열과 시간 제한을 사용해 호출하고 로그를 저장합니다. 사용자 서열을 shell 명령 문자열에 삽입하지 않습니다.
-- M0 manifest는 입력 해시·길이, 실행 파일, 모델·MSA 방식·추론 인자, 실행 시각·상태, 로그·결과 파일과 pLDDT 요약을 저장합니다. M1에서 패키지·가중치·MSA 데이터 버전 수집과 유효한 결과만 재사용하는 캐시를 추가합니다.
-- 초기 검색 대상은 구조 약 1,000개이며 ESM-2 8M 임베딩과 cosine 유사도를 사용합니다. 이 점수는 임베딩 유사도를 정렬하며 구조가 비슷하거나 기능이 같음을 입증하지 않습니다.
-- 공개 MSA를 사용하면 서열이 외부 서비스로 전송됩니다. 실행 전에 이를 사용자에게 알립니다. 비공개 서열에는 로컬 MSA 설정을 사용합니다. 로컬 데이터베이스 구성은 후속 작업입니다.
-- 데스크톱의 WSL2 Linux x86_64, NVIDIA GeForce RTX 4070, 12,282 MiB VRAM, driver 610.88은 `nvidia-smi`로 확인했습니다. `ssh pgx`에서는 Linux aarch64, NVIDIA GB10, driver 580.178.04와 시스템 메모리 약 119GiB를 확인했습니다. 확인 시점 원격 GPU 사용률은 96%여서 기존 GR00T 테스트를 유지하고 추가 추론을 실행하지 않았습니다. 두 장비의 CUDA runtime/JAX 호환성과 실제 추론은 아직 확인하지 않았습니다.
-- 예측 결과의 pLDDT는 국소 구조에 대한 모델 신뢰도이며 생물학적 기능의 증거가 아닙니다. 실험 구조의 B-factor를 pLDDT로 표시하지 않습니다.
+`scripts/prepare_corpus.py`는 RCSB PDB에서 30~300잔기 공개 실험 단백질 최대 1,000개를 수집하고 정확 서열 중복을 제거한다. 출처, 생물종, accession, 체인과 구조 유형 정보를 보존한다. 코퍼스 파일과 벡터는 볼륨에 있으며, 참조 PDB 파일은 선택된 체인을 처음 사용할 때 가져와 구조 캐시에 저장한다.
 
-후속 검증으로 RTX 4070에 독립 ColabFold 환경을 설치하고 실제 1UBQ 예측을 완료했습니다. 기존 GPU 미검증 상태는 [첫 GPU 예측 기록](2026-10-19-first-gpu-prediction.md)으로 갱신합니다. 영속 큐·캐시·검색·UI는 계속 계획 단계입니다.
+인덱스와 질의는 동일한 `facebook/esm2_t6_8M_UR50D` revision `c731040fcd8d73dceaa04b0a8e6329b345b0f5df`를 사용한다. Padding과 special token을 제외하고 residue embedding 평균을 계산한 뒤 320차원 벡터를 L2 정규화한다. 벡터 내적을 cosine 순위로 사용한다. 이 값은 서열 임베딩의 유사도이며 구조 유사도나 기능 확률이 아니다.
 
-## 계획 단계
+실제 평가에서는 1,000개 self-hit sanity check와 같은 UniProt 그룹 평가를 구분한다. 그룹 평가에서는 ESM-2보다 3-mer Jaccard 기준선이 높았으며 family-held-out split도 아니다. 자세한 수치와 후속 평가 범위는 [평가 기록](2026-10-19-search-evaluation.md)에 있다.
 
-M1에서는 GPU 한 대에서 공개 단백질 하나를 실제로 예측하고 PDB, 신뢰도 결과, 로그, manifest, 영속 작업 상태를 확인합니다. M2에서는 출처를 보존하는 코퍼스를 만들고 서열 검색 기준선과 Recall@10을 비교합니다. M3에서는 UI, 예측, 검색, 3D 비교, 다운로드, 처음부터 끝까지 실행하는 튜토리얼을 연결합니다. MVP는 세 단계를 모두 완료해야 합니다. [GPU 실행 안내](2026-10-19-gpu-runbook.md)와 [작업 기록](2026-10-19-work-log.md)을 참고하세요.
+## 예측 작업과 결과 캐시
 
-## 출처와 해석
+SQLite는 작업 상태, 서열, 설정, 결과 위치 및 manifest를 저장한다. worker는 queued 작업을 원자적으로 claim하고 한 번에 하나씩 실행하며 heartbeat를 갱신한다. 프로세스가 끊긴 running 작업은 복구 시 재시도 가능한 실패 상태로 남는다. API는 결과 상태, 로그, 구조 및 다운로드 bundle을 제공한다.
 
-ColabFold 공식 자료는 로컬 batch 예측과 MSA 선택지를 설명하며, 공개 MSA 서버 사용에는 요청 제한과 개인정보 고려가 따릅니다. ESM 저장소는 사전 학습된 ESM-2 모델과 임베딩 추출을 설명합니다. NVIDIA 문서는 DGX Spark를 ARM/Grace Blackwell 시스템으로 안내합니다. 이 자료는 설계 근거이며, 아직 확인되지 않은 장비의 호환성이나 성능을 보장하지 않습니다.
+캐시 키에는 정규화 서열, 결과를 바꾸는 추론 설정, 엔진 런타임 identity가 들어간다. 엔진 fingerprint는 런타임/모델 identity와 ColabFold 모델 가중치 checksum 정보를 포함한다. 캐시를 반환하기 전 성공 manifest, PDB와 score 산출물 형식, 저장된 checksum을 검증한다. 시간 제한은 추론 결과를 바꾸지 않으므로 키에서 제외한다.
+
+기본 설정은 `alphafold2_ptm`, 모델 1개, recycle 3회, 공개 `mmseqs2_uniref_env` MSA다. 기본 MSA는 서열을 ColabFold 공개 서버로 전송하므로 화면은 서열 제출 전에 동의 checkbox를 요구한다. `single_sequence`는 공개 MSA 서비스 전송 없이 동작하지만 MSA를 생성하지 않는다.
+
+## 화면 해석과 제한
+
+예측 구조는 pLDDT 신뢰도 색상으로 표시하고 실험 참조는 단색으로 구분한다. 실험 구조의 B-factor는 pLDDT로 변환하지 않는다. 두 구조를 동시에 볼 수 있지만 현재 구현은 잔기 정렬, 구조 superposition, RMSD/TM-score를 제공하지 않는다.
+
+family-held-out 검색 일반화 평가는 남아 있으므로 현재 검색 결과를 전반적 품질 보증으로 해석하지 않는다. 코퍼스는 최대 1,000개의 탐색 데이터다. 원격 GB10 환경의 ColabFold/JAX 호환성도 미검증이다. Docker GPU 예측 경로는 RTX 4070에서 1UBQ 성공과 동일 입력 캐시 재사용으로 확인했다. 통합 결과는 [작업 기록](2026-10-19-work-log.md)에 갱신한다.
+
+관련: [PRD](../PRD.md), [MVP 튜토리얼](2026-10-19-mvp-tutorial.md), [평가 기록](2026-10-19-search-evaluation.md).

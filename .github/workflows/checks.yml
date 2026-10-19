@@ -1,0 +1,16 @@
+name: Checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install '.[web,dev]'
+      - run: python -m unittest discover -s tests -v
+      - run: node --check src/protein_explorer/static/app.js
+      - run: docker compose --profile gpu --profile prepare config --quiet

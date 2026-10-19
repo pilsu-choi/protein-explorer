@@ -1,0 +1,22 @@
+FROM ghcr.io/sokrypton/colabfold:1.6.2-cuda12@sha256:22f1243a8feca427b6942889d4dc3b549a3b75b23df9cf85c5f512a85e4f7f77
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/opt/protein-explorer/src \
+    TF_FORCE_UNIFIED_MEMORY=0 \
+    JAX_PLATFORMS=cuda,cpu \
+    XLA_PYTHON_CLIENT_MEM_FRACTION=.5 \
+    XLA_PYTHON_CLIENT_PREALLOCATE=false \
+    HF_HOME=/models/huggingface \
+    XDG_CACHE_HOME=/models/cache \
+    MPLCONFIGDIR=/models/matplotlib
+
+WORKDIR /opt/protein-explorer
+
+# At 2026-10-19, the upstream 1.6.3 CUDA image tag was advertised but unpublished.
+# Keep application code below this dependency layer to cache the large GPU install.
+RUN python -m pip install --no-cache-dir 'colabfold[alphafold]==1.6.3'
+
+COPY src/protein_explorer ./src/protein_explorer
+
+CMD ["python", "-m", "protein_explorer.worker", "--root", "/data", "--colabfold-batch", "/usr/local/bin/colabfold_batch", "--data-dir", "/models/alphafold"]

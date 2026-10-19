@@ -4,13 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "protein-explorer"
-version = "0.1.0"
-description = "Local protein sequence validation and ColabFold runner"
+version = "0.2.0"
+description = "Local GPU protein prediction, ESM-2 search, and 3D comparison"
 requires-python = ">=3.10"
 dependencies = []
+
+[project.optional-dependencies]
+web = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "numpy>=2,<3"]
+search = ["numpy>=2,<3", "torch>=2.5,<3", "transformers>=4.45,<5"]
+dev = ["httpx>=0.28,<1", "playwright>=1.50,<2", "pyyaml>=6,<7"]
 
 [project.scripts]
 protein-explorer = "protein_explorer.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+protein_explorer = ["static/*", "static/vendor/*"]

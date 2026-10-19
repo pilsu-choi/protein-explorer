@@ -1,0 +1,79 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: protein-explorer:local
+    init: true
+    environment:
+      PE_ROOT: /data
+      PE_CORPUS_DIR: /data/corpus
+      HF_HOME: /models/huggingface
+    ports:
+      - "127.0.0.1:${PE_PORT:-8080}:8000"
+    volumes:
+      - protein_data:/data
+      - model_cache:/models
+    restart: unless-stopped
+
+  worker:
+    profiles: [gpu]
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: protein-explorer-worker:local
+    init: true
+    environment:
+      TF_FORCE_UNIFIED_MEMORY: "0"
+      JAX_PLATFORMS: cuda,cpu
+      XLA_PYTHON_CLIENT_MEM_FRACTION: ".5"
+      XLA_PYTHON_CLIENT_PREALLOCATE: "false"
+      HF_HOME: /models/huggingface
+      XDG_CACHE_HOME: /models/cache
+      MPLCONFIGDIR: /models/matplotlib
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    command:
+      - python
+      - -m
+      - protein_explorer.worker
+      - --root
+      - /data
+      - --colabfold-batch
+      - /usr/local/bin/colabfold_batch
+      - --data-dir
+      - /models/alphafold
+    volumes:
+      - protein_data:/data
+      - model_cache:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  prepare:
+    profiles: [prepare]
+    image: protein-explorer:local
+    environment:
+      PE_ROOT: /data
+      PE_CORPUS_DIR: /data/corpus
+      HF_HOME: /models/huggingface
+      PYTHONPATH: /app/src
+    command:
+      - python
+      - scripts/prepare_corpus.py
+      - --output
+      - /data/corpus
+      - --limit
+      - "1000"
+    volumes:
+      - protein_data:/data
+      - model_cache:/models
+    restart: "no"
+
+volumes:
+  protein_data:
+  model_cache:
