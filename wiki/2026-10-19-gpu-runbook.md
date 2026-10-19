@@ -6,7 +6,7 @@ tags: [gpu, colabfold, tutorial, reproducibility, msa]
 status: draft
 generated:
   by: codex/gpt-6
-  at: 2026-10-19T12:25:02Z
+  at: 2026-10-19T12:43:10Z
 sources:
   - id: prd
     resource: ../PRD.md
@@ -35,7 +35,7 @@ sources:
 
 이 절차는 실제 로컬 추론을 수행하고 근거를 기록하기 위한 안내입니다. 데스크톱은 WSL2 Linux x86_64, NVIDIA GeForce RTX 4070, VRAM 12,282 MiB, driver 610.88이며 읽기 전용 `nvidia-smi` 실행으로 확인했습니다. `ssh pgx`의 원격 장비는 Linux aarch64, NVIDIA GB10, driver 580.178.04, 시스템 메모리 약 119GiB입니다. 확인 시점 GPU 사용률은 96%, Python GPU 프로세스 사용 메모리는 약 40GB, 시스템 가용 메모리는 약 38GiB였습니다. 기존 GR00T 테스트가 진행 중이므로 추가 추론은 실행하지 않았습니다. 이 값은 순간 관측값이며 다음 실행 전에 다시 확인합니다.
 
-양쪽 모두 `colabfold_batch`가 PATH에 없습니다. 장비 확인은 CUDA runtime/JAX 호환성이나 실제 추론 검증을 대신하지 않습니다. [구조와 범위](2026-10-19-architecture.md)를 먼저 읽고, 결과는 Git에 넣지 말고 ignore 처리된 데이터/출력 디렉터리에 보관합니다.
+위 하드웨어 점검 이후 데스크톱의 독립 runtime에 ColabFold를 설치하고 1UBQ 실제 GPU 예측과 산출물 검증을 완료했습니다. 성공 설정·스크립트·약 37초의 실행 결과·실패 이력은 [첫 GPU 예측 기록](2026-10-19-first-gpu-prediction.md)에 있습니다. 원격 `pgx`의 추론 호환성은 아직 미검증입니다. 결과는 Git에 넣지 말고 별도 runtime의 데이터/출력 디렉터리에 보관합니다.
 
 ## 1단계: 장비 확인
 

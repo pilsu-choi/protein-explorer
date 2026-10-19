@@ -50,6 +50,9 @@ def build_parser() -> argparse.ArgumentParser:
     predict.add_argument("--output-dir", help="new, unused directory for this prediction")
     predict.add_argument("--timeout", type=int, default=7200, help="maximum runtime in seconds (default: 7200)")
     predict.add_argument("--num-recycle", type=int, default=3, help="ColabFold recycle count (default: 3)")
+    predict.add_argument("--num-models", type=int, choices=range(1, 6), default=5,
+                         help="number of ColabFold models to run (1-5; default: 5)")
+    predict.add_argument("--data-dir", help="ColabFold model cache directory (default: ColabFold's default)")
     predict.add_argument("--model-type", choices=("alphafold2_ptm",), default="alphafold2_ptm")
     predict.add_argument("--msa-mode", choices=("mmseqs2_uniref_env", "single_sequence"),
                          default="mmseqs2_uniref_env", help="public MSA service (default) or sequence-only prediction")
@@ -69,7 +72,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.msa_mode == "mmseqs2_uniref_env":
             print("Notice: ColabFold's public MSA mode sends the sequence to its external MSA service.", file=sys.stderr)
         directory, manifest = run_prediction(sequence, args.colabfold_batch, args.output_dir, args.timeout,
-                                             args.num_recycle, args.model_type, args.msa_mode)
+                                             args.num_recycle, args.model_type, args.msa_mode,
+                                             args.num_models, args.data_dir)
         print(f"Prediction succeeded: {directory}")
         print(f"Ranked PDB: {manifest['pdb']}; pLDDT mean: {manifest['plddt']['mean']:.2f}")
         return 0

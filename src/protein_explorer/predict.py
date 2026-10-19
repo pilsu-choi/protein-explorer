@@ -77,12 +77,15 @@ def _fresh_output_dir(requested: str | None) -> Path:
 
 def run_prediction(sequence_text: str, executable: str = "colabfold_batch", output_dir: str | None = None,
                    timeout: int = 7200, num_recycle: int = 3, model_type: str = "alphafold2_ptm",
-                   msa_mode: str = "mmseqs2_uniref_env") -> tuple[Path, dict]:
+                   msa_mode: str = "mmseqs2_uniref_env", num_models: int = 5,
+                   data_dir: str | None = None) -> tuple[Path, dict]:
     sequence = parse_sequence(sequence_text)
     if not 1 <= timeout <= 86400:
         raise PredictionError("Timeout must be between 1 and 86400 seconds.")
     if not 0 <= num_recycle <= 20:
         raise PredictionError("--num-recycle must be between 0 and 20.")
+    if not 1 <= num_models <= 5:
+        raise PredictionError("--num-models must be between 1 and 5.")
     if model_type != "alphafold2_ptm":
         raise PredictionError("--model-type currently supports alphafold2_ptm only.")
     if msa_mode not in {"mmseqs2_uniref_env", "single_sequence"}:
@@ -97,19 +100,24 @@ def run_prediction(sequence_text: str, executable: str = "colabfold_batch", outp
     manifest_path = directory / "manifest.json"
     digest = hashlib.sha256(sequence.encode("ascii")).hexdigest()
     argv = [resolved, str(fasta), str(directory), "--model-type", model_type, "--msa-mode", msa_mode,
-            "--num-recycle", str(num_recycle)]
+            "--num-recycle", str(num_recycle), "--num-models", str(num_models)]
+    if data_dir is not None:
+        argv.extend(("--data", data_dir))
     manifest = {
         "status": "running", "sequence_sha256": digest, "sequence_length": len(sequence),
         "settings": {"executable": resolved, "model_type": model_type, "msa_mode": msa_mode,
-                     "num_recycle": num_recycle, "timeout_seconds": timeout, "argv": argv},
+                     "num_recycle": num_recycle, "num_models": num_models, "data_dir": data_dir,
+                     "timeout_seconds": timeout, "argv": argv},
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "log": log_path.name,
+        "log": log_path.name, "returncode": None,
     }
     _atomic_json(manifest_path, manifest)
     try:
         with log_path.open("w", encoding="utf-8") as log:
             result = subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                                     timeout=timeout, check=False, shell=False)
+        manifest["returncode"] = result.returncode
+        _atomic_json(manifest_path, manifest)
         if result.returncode != 0:
             raise PredictionError(f"ColabFold exited with status {result.returncode}; see {log_path}.")
         pdb, scores, summary = _validate_outputs(directory, sequence)

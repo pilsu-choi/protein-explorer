@@ -1,0 +1,12 @@
+{
+  "accession": "1UBQ",
+  "chain": "A",
+  "name": "Ubiquitin",
+  "organism": "Homo sapiens",
+  "sequence_length": 76,
+  "sequence_sha256": "233b4b0b8c4616095bc3249f9375fc345d32af7deaef07117d0383c51d6f19aa",
+  "source": "https://www.rcsb.org/fasta/entry/1UBQ",
+  "structure_source": "https://www.rcsb.org/structure/1UBQ",
+  "retrieved_on": "2026-10-19",
+  "purpose": "Public reference sequence for real local GPU inference; prediction is generated anew."
+}
